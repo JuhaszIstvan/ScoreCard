@@ -1,0 +1,318 @@
+Option Explicit
+Private Declare Function SetForegroundWindow _
+                     Lib "user32.dll" _
+                   (ByVal hWnd As Long) As Long
+
+
+Declare Function GetDriveType _
+    Lib "kernel32" Alias "GetDriveTypeA" ( _
+        ByVal nDrive As String) _
+    As Long
+Sub logger(arg1)
+Debug.Print arg1
+End Sub
+Function GetFilenameFromPath(ByVal strPath As String) As String
+' Returns the rightmost characters of a string upto but not including the rightmost '\'
+    If Right$(strPath, 1) <> "\" And Len(strPath) > 0 Then
+        GetFilenameFromPath = GetFilenameFromPath(Left$(strPath, Len(strPath) - 1)) + Right$(strPath, 1)
+    End If
+End Function
+Function Open_file(True_For_Read_only_False_For_Read_And_Write, Optional WindowTitle As String, Optional FileName As String, Optional Startfolder As String) As Workbook
+Dim Macrowb As Workbook
+    Set Macrowb = ThisWorkbook
+Dim SRCBOOK As Workbook
+Dim sheetname As String
+logger "Filename received as parameter: " & FileName
+If FileName = "" Then
+With Application.FileDialog(msoFileDialogFilePicker)
+    .InitialFileName = Startfolder
+    .title = WindowTitle
+    .AllowMultiSelect = False
+    .Show
+    On Error Resume Next
+    FileName = .SelectedItems(1)
+    On Error GoTo 0
+    logger "Filename selected in window: " & FileName
+End With
+End If
+On Error Resume Next
+'if the document with this name is open then let's close it.
+Set SRCBOOK = Workbooks(GetFilenameFromPath(FileName))
+If Not SRCBOOK Is Nothing Then
+Workbooks(GetFilenameFromPath(FileName)).Close
+End If
+ On Error GoTo 0
+  logger FileName
+    ' Or Len(GetFilenameFromPath(filename))
+    If Not Len(Dir(FileName)) > 0 Then
+        logger ("The provided filepath was ... bad.")
+        MsgBox ("The provided filepath was ... bad.")
+    End
+ElseIf FileName <> "False" And FileName <> "" Then
+    logger ("The file: " & FileName & " was supplied")
+    On Error Resume Next
+        Application.ScreenUpdating = True
+        Set SRCBOOK = Workbooks.Open(FileName:=FileName, UpdateLinks:=False, ReadOnly:=True_For_Read_only_False_For_Read_And_Write)
+        Macrowb.Activate
+        Application.ScreenUpdating = True
+        On Error GoTo 0
+        Application.ScreenUpdating = True
+            If Err.Number Then
+                    logger ("Error with opening the file: " & CStr(Err.Description))
+            Else
+                    logger (CStr(FileName) & " was successfully opened")
+            End If
+Else
+logger ("The File opening was cancelled")
+End
+
+End If
+
+Set Open_file = SRCBOOK
+End Function
+Sub MSS_Table_Importer(Source_Workbook As Workbook, Source_Worksheet As String, Source_Header_Row_Number As Integer, Target_Workbook As Workbook, Target_Worksheet As String, Target_Header_Row_Number As Integer, clearprevdata As Boolean, Importorder, Optional JoinType As String)
+Dim sourcebook As Workbook
+Set sourcebook = Source_Workbook
+Dim tbook As Workbook
+Set tbook = Target_Workbook
+Dim src As Worksheet
+    Set src = sourcebook.Worksheets(Source_Worksheet)
+Dim tgt As Worksheet
+    Set tgt = tbook.Worksheets(Target_Worksheet)
+Dim tgtlastrow As Long, srclastrow As Long
+Dim TgtHeaderRow As Integer
+Dim SrcHeadeRrow As Integer
+Dim Talleyrand As String
+Dim Tocqueville As String
+Dim Marat As String
+Dim Danton As String
+Dim Robespierre() As String
+Dim tempstring As String
+
+Application.ScreenUpdating = True
+Call MSS_KillAutofilter(tgt)
+Talleyrand = "The following columns were migrated:" & vbNewLine
+TgtHeaderRow = Target_Header_Row_Number
+SrcHeadeRrow = Source_Header_Row_Number
+Dim megnyit As Workbook
+Dim download As Integer
+Dim C As Integer
+Dim i As Integer
+Dim Coltgt As Integer
+Dim ColSrc As Integer
+Dim imporder As Integer
+imporder = Importorder
+Dim header As Integer
+header = 1
+Dim headerlength As Integer
+Dim lepteto As Integer
+If sourcebook Is Nothing Then
+    MsgBox ("Specified parameter, " & sourcebook.Name & " was not found, ending procedure.")
+    Exit Sub
+End If
+If clearprevdata = True Then
+tgt.Range(tgt.Rows(TgtHeaderRow + 1), tgt.Rows(GetLastRow(tgt, 1))).ClearContents
+End If
+
+tgtlastrow = GetLastRow(tgt, 1) + TgtHeaderRow
+src.Activate
+srclastrow = GetLastRow(src, 1) - SrcHeadeRrow
+Select Case imporder
+Case 1
+    'Inserting after the stack
+Case 2
+    'the data is inserted before the existing stack.
+    'Inserting the empty rows Row
+    If srclastrow <> 0 Then
+        tgt.Range("A" & TgtHeaderRow + 1 & ":A" & TgtHeaderRow + srclastrow).EntireRow.Insert
+    End If
+    'beginning to import the columns
+    headerlength = GetLastCol(tgt, TgtHeaderRow)
+    For lepteto = 1 To headerlength
+        Coltgt = lepteto
+        On Error Resume Next
+        If IsError(Application.WorksheetFunction.Match(Application.WorksheetFunction.Index(tgt.Range(tgt.Cells(TgtHeaderRow, 1), tgt.Cells(TgtHeaderRow, headerlength)), 1, lepteto), src.Rows(SrcHeadeRrow), 0)) Then
+            Marat = Marat & ";" & Coltgt & ";"
+            Tocqueville = Tocqueville & " Column: " & Coltgt & " column name: " & tgt.Cells(TgtHeaderRow, Coltgt)
+            logger ("NOT found:Column: " & Coltgt & " column name: " & src.Cells(SrcHeadeRrow, ColSrc))
+        Else
+        On Error GoTo 0
+            src.Activate
+            ColSrc = Application.WorksheetFunction.Match(Application.WorksheetFunction.Index(tgt.Range(tgt.Cells(TgtHeaderRow, 1), tgt.Cells(TgtHeaderRow, headerlength)), 1, lepteto), src.Rows(SrcHeadeRrow), 0)
+            Coltgt = lepteto
+            Danton = Danton & ";" & ColSrc & ";"
+            On Error GoTo 0
+            Talleyrand = Talleyrand & Chr(10) & "Column:" & ColSrc & ".  " & src.Cells(SrcHeadeRrow, ColSrc) & "  ->   " & "Column:" & Coltgt & ".  " & tgt.Cells(TgtHeaderRow, Coltgt)
+            If srclastrow <> 0 Then
+                src.Range(src.Cells(SrcHeadeRrow + 1, ColSrc), src.Cells(SrcHeadeRrow + srclastrow, ColSrc)).Copy tgt.Range(tgt.Cells(TgtHeaderRow + 1, Coltgt), tgt.Cells(TgtHeaderRow + srclastrow, Coltgt))
+            End If
+            On Error GoTo 0
+        End If
+        Err.Number = 0
+    Next
+    Select Case JoinType
+    Case "OuterJoin"
+        Robespierre() = Split(Danton, ";")
+        headerlength = 0
+        headerlength = GetLastCol(src, SrcHeadeRrow)
+        For lepteto = 1 To headerlength
+        'MsgBox "sourceheader l?ptet?: " & lepteto & " was found in " & Danton & " the instring function produces: " & (InStr(1, Danton, ";" & CStr(lepteto) & ";"))
+            If (InStr(1, Danton, ";" & CStr(lepteto) & ";")) = 0 Then
+            Coltgt = GetLastCol(tgt, TgtHeaderRow) + 1
+            ColSrc = lepteto
+            'MsgBox "the colrsc wasn't found " & ColSrc & src.Cells(SrcHeaderRow, ColSrc)
+            tgt.Cells(TgtHeaderRow, Coltgt) = src.Cells(SrcHeadeRrow, ColSrc)
+            If srclastrow <> 0 Then
+                src.Range(src.Cells(SrcHeadeRrow + 1, ColSrc), src.Cells(SrcHeadeRrow + srclastrow, ColSrc)).Copy tgt.Range(tgt.Cells(TgtHeaderRow + 1, Coltgt), tgt.Cells(TgtHeaderRow + srclastrow, Coltgt))
+            End If
+            Talleyrand = Talleyrand & Chr(10) & "Column:" & ColSrc & ".  " & src.Cells(SrcHeadeRrow, ColSrc) & "  ->   " & "Column:" & Coltgt & ".  " & tgt.Cells(TgtHeaderRow, Coltgt)
+            End If
+        Next
+    End Select
+End Select
+'MsgBox Talleyrand & vbNewLine & Tocqueville
+'logger Talleyrand & vbNewLine & Tocqueville
+End Sub
+Sub MSS_KillAutofilter(targetworksheet)
+If targetworksheet.AutoFilterMode = True Then targetworksheet.AutoFilterMode = False
+End Sub
+Function GetLastCol(Worksheet_As_Object As Worksheet, Row_Number_We_Are_Looking_For_The_Last_Column_In As Integer)
+With Worksheet_As_Object
+    If WorksheetFunction.CountA(.Rows(Row_Number_We_Are_Looking_For_The_Last_Column_In)) = 0 Then
+    GetLastCol = 0
+    Else
+    GetLastCol = .Cells(Row_Number_We_Are_Looking_For_The_Last_Column_In, .Columns.Count).End(xlToLeft).Column
+    End If
+End With
+End Function
+Function GetLastRow(Worksheet_As_Object As Worksheet, Col_Number_We_Are_Looking_For_The_Last_Row_In As Integer)
+With Worksheet_As_Object
+    If WorksheetFunction.CountA(.Columns(Col_Number_We_Are_Looking_For_The_Last_Row_In)) = 0 Then
+        GetLastRow = 0
+    Else
+        GetLastRow = .Cells(.Rows.Count, Col_Number_We_Are_Looking_For_The_Last_Row_In).End(xlUp).Row
+    End If
+End With
+End Function
+Function GetHorizontalPos(String_We_Are_Looking_for As String, Worksheet_As_Object As Worksheet, Row_We_Are_looking_For_The_Item_In As Integer)
+GetHorizontalPos = Application.WorksheetFunction.Match(String_We_Are_Looking_for, Worksheet_As_Object.Rows(Row_We_Are_looking_For_The_Item_In), 0)
+End Function
+Function GetVerticalPos(String_We_Are_Looking_for As String, Worksheet_As_Object As Worksheet, Column_We_Are_looking_For_The_Item_In As Integer)
+GetVerticalPos = Application.WorksheetFunction.Match(String_We_Are_Looking_for, Worksheet_As_Object.Columns(Column_We_Are_looking_For_The_Item_In), 0)
+End Function
+Sub Temp_Contents_Sign_updater(Contents As String)
+'this process just updates a textbox with the argument.
+Dim Macrowb As Workbook
+    Set Macrowb = ThisWorkbook
+Dim Cover As Worksheet
+    Set Cover = Macrowb.Worksheets("cover")
+Cover.Shapes("Temp Contents").TextFrame.Characters.Text = Contents
+End Sub
+Sub MSS_Format_copier()
+'This script takes the  columns widths of the Source sheet and applies them to sheets in the  workbook that have the flag "Standardise Me" in cells(6,1)
+'The script can be used to sanitise rolling reports. This and the following script were written to allow an analyst to change the layout and decorations of a multi-sheet report by hand without manually updating all the sheets ensuring that the formatting remained identical.
+'The development of this tool was brought about gradual expansion of the report. The preferred solution would be - i.e.  had this been designed from the ground up - that the template itself being  cloned in its entirety and customised
+
+Dim Macrowb As Workbook
+Set Macrowb = ThisWorkbook
+Dim ReportWB As Workbook
+Set ReportWB = Open_file(False)
+Dim Colwidth, pointerA, PointerB As Integer
+Dim srccolumnwidth As Long
+Dim ws, Template As Worksheet
+Dim BoolHidden As Boolean
+Dim rowwidth As Integer
+Set Template = ReportWB.Worksheets("Template")
+Colwidth = GetLastCol(Template, 9)
+rowwidth = GetLastRow(Template, 1)
+For pointerA = 1 To Colwidth
+    If Not IsEmpty(Template.Cells(9, pointerA)) Then
+    srccolumnwidth = Template.Columns(pointerA).ColumnWidth
+    BoolHidden = Template.Columns(pointerA).Hidden
+        For Each ws In ReportWB.Worksheets
+                ws.Activate
+                ActiveWindow.Zoom = 70
+                If ws.Cells(6, 1) = "Standardise Me" Then
+                logger ws.Name
+                    'On Error Resume Next
+                    PointerB = WorksheetFunction.Match(Template.Cells(9, pointerA), ws.Range(ws.Cells(9, 1), ws.Cells(9, 26)), 0)
+                    ws.Columns(PointerB).ColumnWidth = srccolumnwidth
+                    ws.Columns(PointerB).Hidden = BoolHidden
+                    On Error GoTo 0
+                End If
+                PointerB = 0
+        Next ws
+    End If
+Next
+End Sub
+Sub MSS_Format_Copy()
+'Similarly to MSS_Format_copier, this script copies and applies the formats (conditional formatting) from the template worksheet to the report worksheets.
+Dim Macrowb As Workbook
+Set Macrowb = ThisWorkbook
+Dim ReportWB As Workbook
+Dim ModelWs As Worksheet
+Set ReportWB = Open_file(False)
+Dim srccolumnwidth As Long
+Dim ws As Worksheet
+Dim Template As Worksheet
+    Set Template = ReportWB.Worksheets("OneTemplate")
+For Each ws In ReportWB.Worksheets
+            ws.Activate
+            ActiveWindow.Zoom = 80
+            If ws.Cells(6, 1) = "Reporting Month" And ws.Name <> Template.Name Then
+                If ws.Cells(7, 1) = "Country" Then
+                    Set ModelWs = Template
+                Else
+                    MsgBox "I don't know what type of sheet " & ws.Name & " is!" & vbNewLine & "Cells(7,1) isn't either Country nor Cluster!" & vbNewLine & "Skipping Worksheet"
+                    Set ModelWs = Nothing
+                End If
+                If Not ModelWs Is Nothing Then
+                    ws.Cells.ClearFormats
+                    ModelWs.Range(ModelWs.Columns(1), ModelWs.Columns(40)).Copy
+                    With ws
+                        .Range(.Columns(1), .Columns(40)).PasteSpecial Paste:=8, Operation:=xlNone, SkipBlanks:=False, Transpose:=False
+                        .Range(.Columns(1), .Columns(40)).PasteSpecial Paste:=xlPasteFormats, Operation:=xlNone, SkipBlanks:=False, Transpose:=False
+                        .Range(.Rows(1), .Rows(100)).RowHeight = ModelWs.Range(ModelWs.Rows(1), ModelWs.Rows(100)).RowHeight
+                    End With
+                    On Error GoTo 0
+                End If
+            End If
+'ModelWs = Nothing
+Next ws
+Application.CutCopyMode = False
+End Sub
+Sub MSS_OneRor(Optional Calling_object As Object, Optional CustomUserMessage As String)
+'this function was all-encapsulating error handler for reports to be ran by non-technical users. Usage: Open with "On Error goto errorhandler" and finish with a section called errorhandler: tht did nothing but called this function and exited.
+If Calling_object Is Nothing Then
+Else
+Call MSS_Bring_To_Foreground(Calling_object)
+End If
+If CustomUserMessage = "" Then
+CustomUserMessage = "No custom message profided, I am afraid."
+End If
+MsgBox "The Script has encountered with an error:" & vbNewLine & Err.Number & ": " & Err.Description & vbCrLf & vbCrLf & "Details:" & vbCrLf _
+& CustomUserMessage _
+& vbCrLf & "Please contact David S. Porter. - ID: 123456 for resolution."
+End Sub
+Sub MSS_Redim_NamedRange(Startingpoint As Range, Nameoftherange As String)
+'This takes the range starting from the refcell and names it to the string provided. Essential for creating dynamically changing nameranges.
+Dim hello As String
+hello = Startingpoint.Worksheet.Name
+With Startingpoint.Worksheet
+.Range(.Cells(Startingpoint.Row, Startingpoint.Column), _
+.Cells(GetLastRow(Startingpoint.Worksheet, Startingpoint.Column), GetLastCol(Startingpoint.Worksheet, Startingpoint.Row))).Name = Nameoftherange
+End With
+End Sub
+Public Sub MSS_Bring_To_Foreground(What As Object)
+  Call SetForegroundWindow(What.Application.hWnd)
+End Sub
+Sub MSS_IamNotANumber(convertible As Range)
+'string-to-number converter
+    With convertible
+        convertible.NumberFormat = "General"
+        .Value = .Value
+    End With
+End Sub
+End Sub
+
+
