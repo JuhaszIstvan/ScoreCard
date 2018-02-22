@@ -1,0 +1,157 @@
+Option Explicit
+Sub PPT_Example()
+'puts the range framed by "starter" and "finisher" on a specified worksheet onto a PPT slide
+Call logger("PPT_Examplename started")
+Dim Macrowb As Workbook
+Set Macrowb = ThisWorkbook
+Dim ws As Worksheet
+'specifying the worksheet.
+Set ws = Macrowb.Worksheets("ExampleSheet")
+Dim IntStart As Integer
+Dim intEnd As Integer
+Dim PPTpres As PowerPoint.Presentation
+Set pptapp = CreateObject("PowerPoint.Application")
+Dim i As Integer
+Dim copyrange As Range
+Dim saveasname As String
+
+'this loop is looking for the beginning\ending marks. Retrospectively, a simple match could have sufficed here.
+For i = 4 To GetLastRow(ws, 1)
+If ws.Cells(i, 1) = "starter" Then
+    IntStart = i
+ElseIf ws.Cells(i, 1) = "Clustersum" Then
+    intEnd = i
+Set copyrange = ws.Range(ws.Cells(IntStart, 3), ws.Cells(intEnd, 15))
+
+'the PPT-s name is formulaic in this use case scenario this script generates it"
+saveasname = "PPTname_" & MonthName
+'I don't remember why was the presentation had a .xlsx extension.
+Set PPTpres = pptapp.Presentations(saveasname & ".xlsx")
+Set pptSlide = PPTpres.Slides.AddSlide(PPTpres.Slides.Count + 1, GetLayout("Title and image", PPTpres))
+'This script moves the data onto the specified slide
+Call PPT_Range_2_Prezi(copyrange, pptSlide)
+'Set Title for The Example Slide
+pptSlide.Shapes("Title 1").TextFrame.TextRange.Text = "My title"
+
+End If
+Next
+
+End Sub
+Sub PPT_Range_2_Prezi(Range As Object, Slide As PowerPoint.Slide, Optional RangeHeight As Single, Optional DontResize As Boolean)
+'This script moves the data onto the specified slide
+Dim Macrowb As Workbook
+Set Macrowb = ThisWorkbook
+Dim SomeObject As Shape
+Application.CutCopyMode = False
+'overencapsulating error handler
+On Error GoTo Errorfound
+
+Dim Myshaperange As PowerPoint.Shape
+If TypeName(Range) = "Range" Then
+Application.CutCopyMode = False
+'I had to use select because that is how I could copy the file as a picture, conversely, select requires the parent document to be 'active'.
+Range.Worksheet.Activate
+Range.Select
+    Range.CopyPicture Appearance:=xlScreen, Format:=xlPicture
+ElseIf TypeName(Range) = "Shape" Then
+    Set SomeObject = Range
+    SomeObject.Copy
+Else
+    Range.CopyPicture Appearance:=xlPrinter, Format:=xlPicture
+    MsgBox TypeName(Range)
+End If
+On Error Resume Next
+Err.Clear
+Slide.Shapes.PasteSpecial DataType:=ppPasteEnhancedMetafile
+If Err.Number <> 0 Then
+    MsgBox (Slide.Name & "failed to open")
+    On Error GoTo Errorfound
+End If
+If Not DontResize = True Then
+        Set Myshaperange = pptSlide.Shapes(pptSlide.Shapes.Count)
+
+        With Myshaperange
+         If RangeHeight <> -1 And RangeHeight <> 0 Then
+                        .LockAspectRatio = msoFalse
+                        .Height = RangeHeight * (72 / 2.54)
+        
+         End If
+                   ' Set position:
+
+                        .Left = 0.5 * (72 / 2.54)
+                        .Top = 2.33 * (72 / 2.54)
+                      ' Set size:
+                        .Width = 26.21 * (72 / 2.54)
+       
+        End With
+End If
+
+Application.CutCopyMode = False
+Set Myshaperange = Nothing
+Set SomeObject = Nothing
+Exit Sub
+
+Errorfound:
+Macrowb.Worksheets("Cover").Activate
+Set Myshaperange = Nothing
+Set SomeObject = Nothing
+Call MSS_OneRor
+End
+End Sub
+
+
+Sub PPT_ReplaceME(PPTpres As PowerPoint.Presentation, Replacewhat As String, Replacewith As String)
+ 'this function can be used to fill in placeholders on a presentation. I had to literally walk through every single shape and check for partial match of the key Replacewhat because search itself didn't work.
+    Dim osld As Object, oshp As Object
+    Dim otemp As TextRange, otext As TextRange
+    Dim Inewstart As Integer
+
+    For Each osld In PPTpres.Slides
+        For Each oshp In osld.Shapes
+            If oshp.HasTextFrame Then
+                If oshp.TextFrame.HasText Then
+                    Set otext = oshp.TextFrame.TextRange
+
+                    Set otemp = otext.Replace(Replacewhat, Replacewith, , _
+                    msoFalse, msoFalse)
+
+                    Do While Not otemp Is Nothing
+                        Inewstart = otemp.Start + otemp.Length
+                        Set otemp = otext.Replace(Replacewhat, Replacewith, _
+                        Inewstart, msoFalse, msoFalse)
+                    Loop
+                End If
+            End If
+        Next oshp
+    Next osld
+End Sub
+Sub PPT_DNA_Slide(title As String, Red_letter As String)
+'this function adds new slides for existing powerpoint presentations matching the hardcoded name pattern.
+Dim PPTpres As PowerPoint.Presentation
+Set pptapp = CreateObject("PowerPoint.Application")
+For Each PPTpres In pptapp.Presentations
+    If UCase(Left(PPTpres.Name, Len("EXAMPLE_PRESENTATION_"))) = UCase("EXAMPLE_PRESENTATION_") Then
+        Set pptSlide = PPTpres.Slides.AddSlide(PPTpres.Slides.Count + 1, GetLayout("DNA_Layout", PPTpres))
+        pptSlide.Shapes("Title 1").TextFrame.TextRange.Text = title
+        pptSlide.Shapes("Text Placeholder 2").TextFrame.TextRange.Text = Red_letter
+    End If
+Next
+End Sub
+Public Function GetLayout(LayoutName As String, Optional ParentPresentation As Presentation = Nothing) As CustomLayout
+'this function is used to grab the layout (Master slide) object whose name is LayoutName. I had to write this because inserting a new powerpoint slide programmatically only accepts a layoutobject type of parameter.
+    If ParentPresentation Is Nothing Then
+        Set ParentPresentation = ActivePresentation
+    End If
+
+    Dim oLayout As CustomLayout
+    Dim oDesign As Design
+        For Each oDesign In ParentPresentation.Designs
+            For Each oLayout In oDesign.SlideMaster.CustomLayouts
+                        If UCase(oLayout.Name) = UCase(LayoutName) Then
+                              Set GetLayout = oLayout
+                         
+                               Exit Function
+                        End If
+            Next
+        Next
+End Function
