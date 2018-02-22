@@ -1,4 +1,6 @@
 Option Explicit
+'These are VBA for Applications - Excel Subs and functions. Paste them into a new module in the VBA editor(Alt-F11)
+
 Private Declare Function SetForegroundWindow _
                      Lib "user32.dll" _
                    (ByVal hWnd As Long) As Long
