@@ -295,14 +295,22 @@ End If
 MsgBox "The Script has encountered with an error:" & vbNewLine & Err.Number & ": " & Err.Description & vbCrLf & vbCrLf & "Details:" & vbCrLf _
 & CustomUserMessage _
 & vbCrLf & "Please contact David S. Porter. - ID: 123456 for resolution."
-End Sub
-Sub MSS_Redim_NamedRange(Startingpoint As Range, Nameoftherange As String)
+Sub MSS_Redim_NamedRange(Startingpoint As Range, Nameoftherange As String, Optional SheetEnd1_BlockEnd2 As Integer = 1)
 'This takes the range starting from the refcell and names it to the string provided. Essential for creating dynamically changing nameranges.
 Dim hello As String
+    Dim x  As Integer
+    Dim y As Integer
 hello = Startingpoint.Worksheet.Name
+
 With Startingpoint.Worksheet
-.Range(.Cells(Startingpoint.Row, Startingpoint.Column), _
-.Cells(GetLastRow(Startingpoint.Worksheet, Startingpoint.Column), GetLastCol(Startingpoint.Worksheet, Startingpoint.Row))).Name = Nameoftherange
+If SheetEnd1_BlockEnd2 = 1 Then
+    x = GetLastRow(Startingpoint.Worksheet, Startingpoint.Column)
+    y = GetLastCol(Startingpoint.Worksheet, Startingpoint.Row)
+ElseIf SheetEnd1_BlockEnd2 = 2 Then
+    x = Range(.Cells(Startingpoint.Row, Startingpoint.Column), .Cells(.Rows.Count, Startingpoint.Column)).Cells.SpecialCells(xlCellTypeBlanks).Row - 1
+    y = Range(.Cells(Startingpoint.Row, Startingpoint.Column), .Cells(Startingpoint.Row, .Columns.Count)).Cells.SpecialCells(xlCellTypeBlanks).Column - 1
+End If
+    .Range(.Cells(Startingpoint.Row, Startingpoint.Column), .Cells(x, y)).Name = Nameoftherange
 End With
 End Sub
 Public Sub MSS_Bring_To_Foreground(What As Object)
