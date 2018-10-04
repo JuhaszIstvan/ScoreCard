@@ -298,8 +298,8 @@ MsgBox "The Script has encountered with an error:" & vbNewLine & Err.Number & ":
 Sub MSS_Redim_NamedRange(Startingpoint As Range, Nameoftherange As String, Optional SheetEnd1_BlockEnd2 As Integer = 1)
 'This takes the range starting from the refcell and names it to the string provided. Essential for creating dynamically changing nameranges.
 Dim hello As String
-    Dim x  As Integer
-    Dim y As Integer
+    Dim x  As Long
+    Dim y As Long
 hello = Startingpoint.Worksheet.Name
 
 With Startingpoint.Worksheet
