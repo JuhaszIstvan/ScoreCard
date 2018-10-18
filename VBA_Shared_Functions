@@ -175,6 +175,11 @@ End Select
 'MsgBox Talleyrand & vbNewLine & Tocqueville
 'logger Talleyrand & vbNewLine & Tocqueville
 End Sub
+Sub MSS_Flattener(TheRangeAsRange As Object)
+  TheRangeAsRange.Calculate
+  TheRangeAsRange.Copy
+  TheRangeAsRange.PasteSpecial -4163
+End Sub
 Sub MSS_KillAutofilter(targetworksheet)
 If targetworksheet.AutoFilterMode = True Then targetworksheet.AutoFilterMode = False
 End Sub
