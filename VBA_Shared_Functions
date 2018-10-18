@@ -178,6 +178,19 @@ End Sub
 Sub MSS_KillAutofilter(targetworksheet)
 If targetworksheet.AutoFilterMode = True Then targetworksheet.AutoFilterMode = False
 End Sub
+Sub MSS_AddNewHeader(Worksheet As Object, ColumnName As String)
+Dim TColPOs As Integer
+TColPOs = 0
+On Error Resume Next
+TColPOs = GetHorizontalPos(ColumnName, Worksheet, 1)
+On Error GoTo 0
+
+If TColPOs = 0 Then
+    Worksheet.Cells(1, GetLastCol(Worksheet, 1) + 1) = ColumnName
+    TColPOs = GetHorizontalPos(ColumnName, Worksheet, 1)
+End If
+End Sub
+
 Function GetLastCol(Worksheet_As_Object As Worksheet, Row_Number_We_Are_Looking_For_The_Last_Column_In As Integer)
 With Worksheet_As_Object
     If WorksheetFunction.CountA(.Rows(Row_Number_We_Are_Looking_For_The_Last_Column_In)) = 0 Then
