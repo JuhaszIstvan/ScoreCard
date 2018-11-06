@@ -341,6 +341,27 @@ Sub MSS_IamNotANumber(convertible As Range)
         .Value = .Value
     End With
 End Sub
+Sub ExportDataOntoCell(WorkSheetAsObject As Variant, connectionstring As String, querystring As String)
+On Error GoTo errorfound
+Dim MyConObj As Object
+Set MyConObj = CreateObject("ADODB.Connection")
+Dim RS As Object
+Dim ssql As String
+MyConObj.Open connectionstring
+Set RS = MyConObj.Execute(querystring)
+
+Dim icol As Integer
+   For icol = 1 To RS.fields.Count
+        WorkSheetAsObject.Cells(1, icol).Value = RS.fields(icol - 1).Name
+    Next
+WorkSheetAsObject.Cells(2, 1).CopyFromRecordset RS
+Set MyConObj = Nothing
+Set RS = Nothing
+Exit Sub
+errorfound:
+MsgBox "failed to download the data for some reason and I am too enthusiastic about looking up the code to print the error message. Sox"
+Set MyConObj = Nothing
+Set RS = Nothing
 End Sub
 
 
