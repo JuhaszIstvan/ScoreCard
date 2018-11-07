@@ -70,6 +70,27 @@ End
 
 End If
 
+Sub ExportSQLtoExcelFile(queryname as string)
+'in progress
+Set dlgopen = Application.FileDialog(2)
+With dlgopen
+    .InitialFileName = Environ("USERPROFILE") & "\Desktop\" & Format(Date, "YYYY-MM-DD") & ".xlsx"
+    ireturn = .Show
+End With
+On Error Resume Next
+If ireturn = -1 Then
+    curpath = dlgopen.SelectedItems.Item(1)
+    If Len(curpath) > 0 Then
+        DoCmd.TransferSpreadsheet acExport, 10, queryname, curpath, -1
+    End If
+    
+    If Dir(curpath) <> "" Then
+        MsgBox "Saved successfully to " & curpath
+    Else
+        MsgBox "I can't find a file with such name at " & curpath
+    End If
+End If
+End Sub
 Set Open_file = SRCBOOK
 End Function
 Sub MSS_Table_Importer(Source_Workbook As Workbook, Source_Worksheet As String, Source_Header_Row_Number As Integer, Target_Workbook As Workbook, Target_Worksheet As String, Target_Header_Row_Number As Integer, clearprevdata As Boolean, Importorder, Optional JoinType As String)
