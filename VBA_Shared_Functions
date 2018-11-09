@@ -286,6 +286,25 @@ For pointerA = 1 To Colwidth
     End If
 Next
 End Sub
+Function ResetWorkSheet(WorkSheetName As String, WorkBookObject As Object) As Variant
+Dim ws As Object
+On Error Resume Next
+    Set ws = WorkBookObject.Worksheets(WorkSheetName)
+On Error GoTo 0
+
+Application.ScreenUpdating = False
+If Not ws Is Nothing Then
+Application.DisplayAlerts = False
+    ws.Delete
+Application.DisplayAlerts = True
+End If
+WorkBookObject.Worksheets.Add(after:=WorkBookObject.Worksheets(WorkBookObject.Worksheets.Count)).Name = WorkSheetName
+    
+On Error Resume Next
+    Set ResetWorkSheet = WorkBookObject.Worksheets(WorkSheetName)
+On Error GoTo 0
+End Function
+
 Sub MSS_Format_Copy()
 'Similarly to MSS_Format_copier, this script copies and applies the formats (conditional formatting) from the template worksheet to the report worksheets.
 Dim Macrowb As Workbook
