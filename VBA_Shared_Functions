@@ -28,7 +28,7 @@ logger "Filename received as parameter: " & FileName
 If FileName = "" Then
 With Application.FileDialog(msoFileDialogFilePicker)
     .InitialFileName = Startfolder
-    .title = WindowTitle
+    .Title = WindowTitle
     .AllowMultiSelect = False
     .Show
     On Error Resume Next
@@ -70,6 +70,36 @@ End
 
 End If
 
+Set Open_file = SRCBOOK
+End Function
+Function VerifyWorkBook(HeaderToFind As String, Workbook As Object) As Object
+If ENV = "PROD" Then On Error GoTo errorpart
+Application.ScreenUpdating = False
+Dim location As Integer
+Dim ws As Object
+For Each ws In Workbook.Worksheets
+    location = 0
+    On Error Resume Next
+    location = GetHorizontalPos(HeaderToFind, ws, 1)
+    On Error GoTo 0
+    If location <> 0 Then
+        Debug.Print "Folder found on this worksheet: " & ws.Name
+        Exit For
+    End If
+Next
+If ws Is Nothing Then
+    MsgBox "Couldn't find " & HeaderToFind & " on the any of the worksheets' first row. Exiting"
+    Exit Function
+Else
+    Set VerifyWorkBook = ws
+End If
+exitpart:
+    Call WrapUpSub
+    Exit Sub
+errorpart:
+    MsgBox "Az alkalmazás Hibára futott! " & Err.Number & ": " & Err.Description
+    Resume exitpart
+End Function
 Sub ExportSQLtoExcelFile(queryname as string)
 'in progress
 Set dlgopen = Application.FileDialog(2)
