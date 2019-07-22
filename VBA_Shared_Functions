@@ -411,27 +411,38 @@ Sub MSS_IamNotANumber(convertible As Range)
         .Value = .Value
     End With
 End Sub
-Sub ExportDataOntoCell(WorkSheetAsObject As Variant, connectionstring As String, querystring As String)
-On Error GoTo errorfound
-Dim MyConObj As Object
-Set MyConObj = CreateObject("ADODB.Connection")
-Dim RS As Object
-Dim ssql As String
-MyConObj.Open connectionstring
-Set RS = MyConObj.Execute(querystring)
+Sub ExportDataOntoCell(StartRange As Variant, connectionstring As String, querystring As String)
+If ENV = "PROD" Then On Error GoTo errorpart
+If adatbazis = "" Then Call config_databaseconnection
+
+Dim connstatusz As Object
+Set connstatusz = CreateObject("ADODB.Connection")
+Dim szlarec As Object
+connstatusz.Open adatbazis
+Set szlarec = connstatusz.Execute(querystring)
+
+Dim startcol As Integer
+Dim startrow As Long
+startcol = StartRange.Column
+startrow = StartRange.Row
 
 Dim icol As Integer
-   For icol = 1 To RS.fields.Count
-        WorkSheetAsObject.Cells(1, icol).Value = RS.fields(icol - 1).Name
-    Next
-WorkSheetAsObject.Cells(2, 1).CopyFromRecordset RS
-Set MyConObj = Nothing
-Set RS = Nothing
-Exit Sub
-errorfound:
-MsgBox "failed to download the data for some reason and I am too enthusiastic about looking up the code to print the error message. Sox"
-Set MyConObj = Nothing
-Set RS = Nothing
+   For icol = 1 To szlarec.fields.Count
+        StartRange.Parent.Cells(startrow, startcol - 1 + icol).Value = szlarec.fields(icol - 1).Name
+   Next
+StartRange.Parent.Cells(startrow + 1, startcol).CopyFromRecordset szlarec
+    szlarec.Close
+    Set szlarec = Nothing
+    connstatusz.Close
+    Set connstatusz = Nothing
+    
+exitpart:
+    
+    Call WrapUpSub(szlarec, connstatusz)
+    Exit Sub
+errorpart:
+    MsgBox "Az alkalmazás Hibára futott! " & Err.Number & ": " & Err.Description
+    Resume exitpart
 End Sub
 
 
