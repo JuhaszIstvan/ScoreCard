@@ -395,8 +395,24 @@ If SheetEnd1_BlockEnd2 = 1 Then
     x = GetLastRow(Startingpoint.Worksheet, Startingpoint.Column)
     y = GetLastCol(Startingpoint.Worksheet, Startingpoint.Row)
 ElseIf SheetEnd1_BlockEnd2 = 2 Then
+    Dim ct As Long
+    y = GetLastCol(Startingpoint.Worksheet, Startingpoint.Row)
     x = Range(.Cells(Startingpoint.Row, Startingpoint.Column), .Cells(.Rows.Count, Startingpoint.Column)).Cells.SpecialCells(xlCellTypeBlanks).Row - 1
+    On Error Resume Next
     y = Range(.Cells(Startingpoint.Row, Startingpoint.Column), .Cells(Startingpoint.Row, .Columns.Count)).Cells.SpecialCells(xlCellTypeBlanks).Column - 1
+    On Error GoTo 0
+
+    
+
+'    If WorksheetFunction.CountA(.Columns(Col_Number_We_Are_Looking_For_The_Last_Row_In)) = 0 Then
+'        GetLastRow = 0
+'    Else
+'        GetLastRow = .Cells(.Rows.Count, Col_Number_We_Are_Looking_For_The_Last_Row_In).End(xlUp).Row
+'    End If
+
+
+
+'    Intersect(.Range("A:A"), ActiveSheet.Range("A8:A800").SpecialCells(xlCellTypeBlanks)).Column
 End If
     .Range(.Cells(Startingpoint.Row, Startingpoint.Column), .Cells(x, y)).Name = Nameoftherange
 End With
