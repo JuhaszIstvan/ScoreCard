@@ -397,8 +397,9 @@ If SheetEnd1_BlockEnd2 = 1 Then
 ElseIf SheetEnd1_BlockEnd2 = 2 Then
     Dim ct As Long
     y = GetLastCol(Startingpoint.Worksheet, Startingpoint.Row)
-    x = Range(.Cells(Startingpoint.Row, Startingpoint.Column), .Cells(.Rows.Count, Startingpoint.Column)).Cells.SpecialCells(xlCellTypeBlanks).Row - 1
+    x = GetLastRow(Startingpoint.Worksheet, Startingpoint.Column)
     On Error Resume Next
+    x = Range(.Cells(Startingpoint.Row, Startingpoint.Column), .Cells(.Rows.Count, Startingpoint.Column)).Cells.SpecialCells(xlCellTypeBlanks).Row - 1
     y = Range(.Cells(Startingpoint.Row, Startingpoint.Column), .Cells(Startingpoint.Row, .Columns.Count)).Cells.SpecialCells(xlCellTypeBlanks).Column - 1
     On Error GoTo 0
 
