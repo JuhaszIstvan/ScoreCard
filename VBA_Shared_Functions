@@ -1,6 +1,8 @@
 Option Explicit
-'These are VBA for Applications - Excel Subs and functions. Paste them into a new module in the VBA editor(Alt-F11)
-
+'Description:This is my personal library of VBA Functions and procedures. Insert them into a module to make them available for the project
+'Project home: https://github.com/JuhaszIstvan/VBA-for-Excel
+'License: gpl-3.0
+'Author:Juhasz Istvan
 Private Declare Function SetForegroundWindow _
                      Lib "user32.dll" _
                    (ByVal hWnd As Long) As Long
@@ -461,5 +463,41 @@ errorpart:
     MsgBox "Az alkalmazás Hibára futott! " & Err.Number & ": " & Err.Description
     Resume exitpart
 End Sub
+Sub Clearreferences()
+'this macro removes all references to other workbooks from the cell formulas by replacing the cells' contents with their values
+'I understand that the search function should perform faster than this looperony.
+'this is solely about removing formulas, it does not handle other type of external references.
 
+Dim lastrow As Long
+Dim lastcol As Integer
+Dim j As Long
+Dim i As Integer
+
+For Each ws In ThisWorkbook.Worksheets
+    lastrow = ws.Cells.Find(what:="*", _
+                        After:=Range("A1"), _
+                        LookAt:=xlPart, _
+                        LookIn:=xlFormulas, _
+                        SearchOrder:=xlByRows, _
+                        SearchDirection:=xlPrevious, _
+                        MatchCase:=False).Row
+    lastcol = ws.Cells.Find(what:="*", _
+                        After:=Range("A1"), _
+                        LookAt:=xlPart, _
+                        LookIn:=xlFormulas, _
+                        SearchOrder:=xlByRows, _
+                        SearchDirection:=xlPrevious, _
+                        MatchCase:=False).Row
+    For i = 1 To lastcol
+        For j = 1 To lastrow
+            If InStr(1, ws.Cells(j, i).Formula, "]") > 0 Then
+                ws.Cells(j, i).Value = ws.Cells(j, i).Value
+            End If
+        Next
+    Next
+Next
+End Sub
+Sub Tracer(msg)
+Debug.Print Now() & " " & msg
+End Sub
 
